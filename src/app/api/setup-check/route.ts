@@ -15,11 +15,12 @@ export async function GET() {
       canConnect = true;
       hasSchema = true;
       hasData = result.length > 0;
-    } catch (error: any) {
+    } catch (error: unknown) {
       canConnect = true; // If we get here, connection works
       
       // Check if it's a table doesn't exist error
-      if (error.message?.includes('relation "products" does not exist')) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('relation "products" does not exist')) {
         hasSchema = false;
       } else {
         // Some other error - assume schema exists but no data

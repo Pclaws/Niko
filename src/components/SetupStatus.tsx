@@ -53,7 +53,7 @@ export default function SetupStatus() {
           setupChecks[2].completed = data.hasSchema;
           setupChecks[3].completed = data.hasData;
         }
-      } catch (error) {
+      } catch {
         console.log('Setup check API not available yet');
       }
 
