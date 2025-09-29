@@ -1,40 +1,67 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
+import SetupStatus from '@/components/SetupStatus';
 import { useProductStore } from '@/lib/store/products';
 
 export default function Home() {
   const { products, loading, error, setProducts, setLoading, setError } = useProductStore();
+  const [showSetup, setShowSetup] = useState(false);
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function checkSetupAndFetchProducts() {
       setLoading(true);
       setError(null);
 
       try {
+        // First check if setup is complete
+        const setupResponse = await fetch('/api/setup-check');
+        if (setupResponse.ok) {
+          const setupData = await setupResponse.json();
+          
+          // If database is not ready, show setup page
+          if (!setupData.canConnect || !setupData.hasSchema || !setupData.hasData) {
+            setShowSetup(true);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // If setup check fails or setup is complete, try to fetch products
         const response = await fetch('/api/products');
         if (!response.ok) {
-          throw new Error('Failed to fetch products');
+          // If products fetch fails, show setup page
+          setShowSetup(true);
+          setLoading(false);
+          return;
         }
+        
         const data = await response.json();
         setProducts(data);
+        setShowSetup(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        // On any error, show setup page
+        setShowSetup(true);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchProducts();
+    checkSetupAndFetchProducts();
   }, [setProducts, setLoading, setError]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading products...</div>
+        <div className="text-xl">Loading...</div>
       </div>
     );
+  }
+
+  // Show setup page if database is not ready
+  if (showSetup) {
+    return <SetupStatus />;
   }
 
   if (error) {
